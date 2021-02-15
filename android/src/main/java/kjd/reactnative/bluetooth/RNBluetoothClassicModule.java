@@ -15,6 +15,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.facebook.react.BuildConfig;
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
@@ -47,12 +48,12 @@ import kjd.reactnative.bluetooth.conn.ConnectionAcceptorFactory;
 import kjd.reactnative.bluetooth.conn.ConnectionConnector;
 import kjd.reactnative.bluetooth.conn.ConnectionConnectorFactory;
 import kjd.reactnative.bluetooth.conn.ConnectionFailedException;
-import kjd.reactnative.bluetooth.conn.StandardOption;
-import kjd.reactnative.bluetooth.event.BluetoothStateEvent;
-import kjd.reactnative.bluetooth.event.EventType;
 import kjd.reactnative.bluetooth.conn.DeviceConnection;
 import kjd.reactnative.bluetooth.conn.DeviceConnectionFactory;
+import kjd.reactnative.bluetooth.conn.StandardOption;
 import kjd.reactnative.bluetooth.device.NativeDevice;
+import kjd.reactnative.bluetooth.event.BluetoothStateEvent;
+import kjd.reactnative.bluetooth.event.EventType;
 import kjd.reactnative.bluetooth.receiver.ActionACLReceiver;
 import kjd.reactnative.bluetooth.receiver.DiscoveryReceiver;
 import kjd.reactnative.bluetooth.receiver.PairingReceiver;
@@ -131,14 +132,14 @@ public class RNBluetoothClassicModule
      * goal of this was a simple connection.  This may need to be updated to have the default
      * size updated during package creation.
      */
-    private Map<String, DeviceConnection> mConnections;
+    private static Map<String, DeviceConnection> mConnections = new ConcurrentHashMap<>(1);
 
     /**
      * Maintains a map of {@link ConnectionConnector}(s) keyed on {@link BluetoothDevice} address.
      * Connectors are added during the {@link #connectToDevice} request and removed when either
      * successful or failed.
      */
-    private Map<String, ConnectionConnector> mConnecting;
+    private static Map<String, ConnectionConnector> mConnecting = new ConcurrentHashMap<>(1);
 
     /**
      * Manages intents while the application and {@link BluetoothAdapter} are in discovery mode.
@@ -172,7 +173,7 @@ public class RNBluetoothClassicModule
      * the bluetooth mAdapter in general (connect, disconnect, etc.) and not those which are
      * reading.  Those are managed separately within the device itself.
      */
-    private Map<String, AtomicInteger> mListenerCounts;
+    private static Map<String, AtomicInteger> mListenerCounts = new ConcurrentHashMap<>();
 
     /**
      * Maintains the {@link ConnectionAcceptor} when the module has been placed into accept
@@ -203,10 +204,6 @@ public class RNBluetoothClassicModule
         this.mAcceptorFactories = Collections.unmodifiableMap(acceptFactories);
         this.mConnectorFactories = Collections.unmodifiableMap(connectFactories);
         this.mConnectionFactories = Collections.unmodifiableMap(factories);
-
-        this.mConnections = new ConcurrentHashMap<>(1);
-        this.mConnecting = new ConcurrentHashMap<>(1);
-        this.mListenerCounts = new ConcurrentHashMap<>();
 
         if (mAdapter != null && mAdapter.isEnabled()) {
             sendEvent(EventType.BLUETOOTH_ENABLED,
